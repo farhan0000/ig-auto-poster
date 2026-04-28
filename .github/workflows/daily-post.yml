@@ -1,0 +1,137 @@
+name: Daily Instagram Post
+
+# One post per day, but the time-of-day rotates across the week to hit a
+# mix of US engagement peaks (morning + lunch) and conversion peaks
+# (evening + Sunday night). All times in UTC because GitHub cron is UTC.
+#
+# Day      | UTC      | US ET      | US PT      | UK         | Why
+# ---------|----------|------------|------------|------------|------------------
+# Mon      | 13:00    |  9:00 am   |  6:00 am   |  1:00 pm   | Morning commute
+# Tue      | 16:30    | 12:30 pm   |  9:30 am   |  5:30 pm   | US lunch + UK evening
+# Wed      | 12:00    |  8:00 am   |  5:00 am   |  1:00 pm   | Mid-week morning peak
+# Thu      | 22:30    |  6:30 pm   |  3:30 pm   | 11:30 pm   | After-work US scroll
+# Fri      | 17:30    |  1:30 pm   | 10:30 am   |  6:30 pm   | Friday lunch
+# Sat      | 14:00    | 10:00 am   |  7:00 am   |  3:00 pm   | Sat morning coffee
+# Sun      | 23:00    |  7:00 pm   |  4:00 pm   | 12:00 am   | Sunday evening (high conversion)
+#
+# A 0-25 minute random sleep is added at the top of each run so the post
+# never lands exactly on the cron tick. GitHub Actions also applies its own
+# 5-15 min jitter to scheduled workflows, so total variance is ~5-40 min.
+#
+# To shift the entire schedule (e.g. when DST changes), bump every UTC hour
+# by 1. To add or remove posts, just add/remove cron lines.
+on:
+  schedule:
+    - cron: "0 13 * * 1"      # Mon
+    - cron: "30 16 * * 2"     # Tue
+    - cron: "0 12 * * 3"      # Wed
+    - cron: "30 22 * * 4"     # Thu
+    - cron: "30 17 * * 5"     # Fri
+    - cron: "0 14 * * 6"      # Sat
+    - cron: "0 23 * * 0"      # Sun
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Generate but do NOT publish to Instagram"
+        type: boolean
+        default: false
+      skip_jitter:
+        description: "Skip the 0-25min random delay (for manual runs)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write   # needed to commit the generated image + log back
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: daily-post
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Random jitter (0-25 min)
+        # Only on scheduled runs, not on manual workflow_dispatch.
+        # Posting at 14:00:00 every day is a tell that you're automated.
+        # We sleep a random 0-1500s here so the actual post time drifts
+        # within a ~25min window around the cron tick.
+        if: ${{ github.event_name == 'schedule' && inputs.skip_jitter != true }}
+        run: |
+          DELAY=$((RANDOM % 1500))
+          echo "Sleeping ${DELAY}s before posting..."
+          sleep $DELAY
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Compute GH_RAW_BASE
+        id: rawbase
+        run: |
+          echo "url=https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate image (commit before publishing)
+        # We split into two python invocations: first generate the image and
+        # commit it so it has a stable public URL; THEN publish to IG which
+        # fetches the URL.
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          GH_RAW_BASE: ${{ steps.rawbase.outputs.url }}
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+          STAGE: generate
+        run: |
+          python -m src.pipeline_generate
+
+      - name: Commit generated artifacts
+        run: |
+          git config user.name "ig-auto-poster[bot]"
+          git config user.email "ig-auto-poster@users.noreply.github.com"
+          git add images/ pending_post.json posted_log.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+          else
+            git commit -m "chore: daily post artifacts $(date -u +%Y-%m-%dT%H:%MZ)"
+            git push
+          fi
+
+      - name: Publish to Instagram
+        if: ${{ inputs.dry_run != true }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          GH_RAW_BASE: ${{ steps.rawbase.outputs.url }}
+        run: |
+          # raw.githubusercontent.com can take a few seconds to surface a
+          # newly-pushed file; give it a moment.
+          sleep 15
+          python -m src.pipeline_publish
+
+      - name: Commit final log
+        if: ${{ always() && inputs.dry_run != true }}
+        run: |
+          git config user.name "ig-auto-poster[bot]"
+          git config user.email "ig-auto-poster@users.noreply.github.com"
+          git pull --rebase || true
+          git add posted_log.json pending_post.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+          else
+            git commit -m "chore: log post result $(date -u +%Y-%m-%dT%H:%MZ)"
+            git push
+          fi

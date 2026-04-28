@@ -1,0 +1,86 @@
+# High-RPM English-language niches.
+# RPM = revenue-per-mille (advertising revenue per 1,000 impressions).
+# These categories consistently rank highest on YouTube/IG ad-rate
+# benchmarks for US/UK/CA/AU audiences (2024-2026 reports from
+# Tubefilter, Mediakix, ChannelMeter, Influencer Marketing Hub).
+#
+# Weights bias rotation toward the top earners. Adjust freely.
+
+audience_countries:
+  - US
+  - UK
+  - CA
+  - AU
+language: English
+
+niches:
+  - name: Personal Finance & Investing
+    weight: 5
+    angle_examples:
+      - "passive income ideas for 2026"
+      - "high-yield savings vs index funds"
+      - "Roth IRA mistakes to avoid"
+      - "how to read an earnings report"
+
+  - name: Insurance
+    weight: 4
+    angle_examples:
+      - "term vs whole life insurance"
+      - "lowering car insurance premiums"
+      - "what umbrella insurance actually covers"
+
+  - name: Real Estate & Mortgages
+    weight: 4
+    angle_examples:
+      - "first-time homebuyer tips"
+      - "ARM vs fixed-rate mortgage"
+      - "house hacking explained"
+
+  - name: Legal Advice (general, non-jurisdictional)
+    weight: 3
+    angle_examples:
+      - "rights during a traffic stop"
+      - "what 'at-will employment' really means"
+      - "when you actually need an estate plan"
+
+  - name: Business & Entrepreneurship
+    weight: 4
+    angle_examples:
+      - "side hustle ideas with low startup cost"
+      - "LLC vs S-corp basics"
+      - "negotiating a raise with data"
+
+  - name: Tech, SaaS & Productivity
+    weight: 4
+    angle_examples:
+      - "AI tools that actually save time"
+      - "self-hosting vs SaaS trade-offs"
+      - "password manager comparison"
+
+  - name: Digital Marketing & SEO
+    weight: 3
+    angle_examples:
+      - "what changed in Google Search this year"
+      - "writing copy that converts"
+      - "email vs SMS open rates"
+
+  - name: Cryptocurrency & Web3 (educational)
+    weight: 2
+    angle_examples:
+      - "self-custody wallets explained"
+      - "stablecoin risks"
+      - "what an ETF approval actually changes"
+
+  - name: Health, Longevity & Medical (educational, non-prescriptive)
+    weight: 3
+    angle_examples:
+      - "what HSA accounts can pay for"
+      - "preventive care covered at $0"
+      - "reading a blood panel"
+
+  - name: Online Education & Career
+    weight: 3
+    angle_examples:
+      - "certifications that actually pay off"
+      - "negotiating a remote-work offer"
+      - "resume mistakes recruiters flag"
