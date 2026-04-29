@@ -38,14 +38,18 @@ The workflow commits images back into the repo, so it must be in your account. A
 
 ### 2. Get your Instagram credentials
 
-You said you already have these. For reference, what we need:
+This project uses the **Instagram Login** flow — no Facebook Page required. You only need:
+
+- An Instagram **Business** or **Creator** account (free conversion in IG settings).
+- A Meta developer account (signs in with any Facebook account — even a throwaway one).
+- A Meta app with the **Instagram → "API setup with Instagram login"** product added.
 
 | Secret | What it is | How to get it |
 |---|---|---|
-| `IG_USER_ID` | Numeric ID of your IG Business/Creator account | `GET https://graph.facebook.com/v21.0/me/accounts?access_token=...` → find your page → `GET /{PAGE_ID}?fields=instagram_business_account&access_token=...` |
-| `IG_ACCESS_TOKEN` | **Long-lived Page access token** | Get a User token from Graph API Explorer with scopes `instagram_basic, instagram_content_publish, pages_show_list, pages_read_engagement`. Exchange it for a long-lived token, then exchange that for a Page token. See [Meta's docs](https://developers.facebook.com/docs/instagram-api/getting-started/). |
+| `IG_USER_ID` | Numeric ID of your IG Business/Creator account | Once you have a token (below), `GET https://graph.instagram.com/v21.0/me?fields=user_id,username&access_token=...` returns it. |
+| `IG_ACCESS_TOKEN` | **Long-lived IG user access token** | In your Meta app: Instagram → API setup with Instagram login → "Generate access token". Exchange the short-lived token for a long-lived one at `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=...&access_token=...`. Returns a 60-day token starting `IGQV...`. |
 
-Long-lived Page tokens last ~60 days. **Set a calendar reminder** to refresh — or run the refresh helper (TODO: add `scripts/refresh_token.py`).
+Long-lived IG tokens last ~60 days. **Set a calendar reminder** to refresh — or hit `GET https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=<current>` before it expires.
 
 ### 3. Get your OpenAI API key
 

@@ -1,6 +1,12 @@
 """Instagram Graph API publisher.
 
-Two-step flow per Meta's docs:
+Uses the **Instagram Login** flow (graph.instagram.com), which lets us
+publish without needing a Facebook Page or Page access token. The user
+authenticates directly via Instagram and we use a long-lived IG user
+access token. To switch back to the older FB-Login flow, set
+IG_API_BASE=https://graph.facebook.com/v21.0 and use a Page token.
+
+Two-step publish flow per Meta's docs:
   1) POST /{ig-user-id}/media       -> returns a creation_id ("container")
   2) Poll  /{creation_id}?fields=status_code  until FINISHED (or ERROR)
   3) POST /{ig-user-id}/media_publish?creation_id=...
@@ -20,10 +26,16 @@ import requests
 
 log = logging.getLogger(__name__)
 
-GRAPH = "https://graph.facebook.com/v21.0"
+# Default to the Instagram Login API. Override via env if you want the older
+# Facebook-Login (Page-based) flow.
+DEFAULT_GRAPH = "https://graph.instagram.com/v21.0"
 MAX_CAPTION = 2200
 POLL_INTERVAL_S = 3
 POLL_TIMEOUT_S = 180
+
+
+def _graph_base() -> str:
+    return os.environ.get("IG_API_BASE", DEFAULT_GRAPH).rstrip("/")
 
 
 class InstagramError(RuntimeError):
@@ -31,7 +43,7 @@ class InstagramError(RuntimeError):
 
 
 def _post(path: str, params: dict) -> dict:
-    url = f"{GRAPH}/{path}"
+    url = f"{_graph_base()}/{path}"
     r = requests.post(url, data=params, timeout=60)
     try:
         body = r.json()
@@ -43,7 +55,7 @@ def _post(path: str, params: dict) -> dict:
 
 
 def _get(path: str, params: dict) -> dict:
-    url = f"{GRAPH}/{path}"
+    url = f"{_graph_base()}/{path}"
     r = requests.get(url, params=params, timeout=60)
     try:
         body = r.json()
