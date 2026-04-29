@@ -1,30 +1,33 @@
 # ig-auto-poster
 
-Automated daily Instagram poster targeting **high-RPM English-language niches** (US/UK/CA/AU audiences). Each day the workflow:
+Automated daily content generator for **high-RPM English-language niches** (US/UK/CA/AU audiences). Each day the workflow picks a niche, writes an IG-ready caption + 20 hashtags, generates a 1024×1024 image, and commits the bundle to your repo.
 
-1. Picks a niche from `config/niches.yaml` (weighted, avoids back-to-back repeats).
-2. Asks OpenAI to write an Instagram-ready caption + 20 hashtags + an image prompt.
-3. Generates a 1024×1024 image via OpenAI Images.
-4. Commits the image to your fork so it has a public `raw.githubusercontent.com` URL.
-5. Publishes a single-image feed post via the **official Instagram Graph API**.
-6. Logs the result to `posted_log.json`.
+## Two modes
 
-No unofficial libraries, no username/password automation, no ToS violations.
+**1. Generate-only (default).** No Facebook account required. Each day a fresh `posts/YYYY-MM-DD/` folder gets pushed to your repo with `image.jpg`, `caption.txt`, and `post.json`. Open it on github.com from your phone, copy the caption, save the image, post manually in the Instagram app. About 60 seconds of work per day. Zero risk to your account.
+
+**2. Auto-publish.** Set `IG_USER_ID` and `IG_ACCESS_TOKEN` GitHub secrets (instructions below) and the workflow will additionally publish to Instagram automatically via Meta's official Graph API. Requires a Meta developer account (Facebook login, even if just a throwaway one).
+
+The workflow auto-detects which mode you're in by checking whether the IG secrets are set. Start in generate-only and graduate to auto-publish later if you want.
+
+No unofficial libraries, no IG username/password, no ToS violations in either mode.
 
 ---
 
 ## Architecture
 
 ```
-GitHub Actions cron (14:00 UTC daily)
+GitHub Actions cron (05:00 UTC daily)
+  │
   ├─ pipeline_generate.py
   │    ├─ pick niche (weighted, history-aware)
   │    ├─ OpenAI Chat → caption + hashtags + image_prompt
-  │    └─ OpenAI Images → images/<timestamp>.jpg
+  │    ├─ OpenAI Images → images/<timestamp>.jpg
+  │    └─ also write posts/<YYYY-MM-DD>/{image.jpg,caption.txt,post.json}
   │
-  ├─ git commit + push   ← so raw.githubusercontent.com serves the image
+  ├─ git commit + push   ← always runs
   │
-  └─ pipeline_publish.py
+  └─ pipeline_publish.py  (skipped if IG secrets are not set)
        └─ Graph API: POST /media → poll → POST /media_publish
 ```
 

@@ -151,6 +151,19 @@ def main() -> None:
     assert len(images) >= 1, f"expected >=1 image, got {images}"
     assert all(i.stat().st_size > 0 for i in images)
 
+    # The human-friendly posts/ bundle should also exist.
+    posts_dir = repo_root / "posts"
+    assert posts_dir.exists(), "posts/ dir was not created"
+    today_dirs = list(posts_dir.iterdir())
+    assert today_dirs, "no dated subfolder under posts/"
+    today = today_dirs[-1]
+    assert (today / "image.jpg").exists(), f"missing image in {today}"
+    assert (today / "caption.txt").exists(), f"missing caption in {today}"
+    assert (today / "post.json").exists(), f"missing post.json in {today}"
+    caption_text = (today / "caption.txt").read_text()
+    assert "#" in caption_text, "caption.txt should include hashtags"
+    assert len(caption_text) > 200, f"caption.txt suspiciously short: {len(caption_text)}"
+
     # IG flow: 1 POST /media, 1 GET status, 1 POST /media_publish.
     posts = [c for c in _call_log if c[0] == "POST"]
     gets = [c for c in _call_log if c[0] == "GET"]
