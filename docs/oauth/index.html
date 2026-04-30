@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>OAuth Callback · The Gadget City</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 720px;
+         margin: 60px auto; padding: 0 24px; color: #111; line-height: 1.6; }
+  h1 { font-size: 28px; }
+  code { background: #f4f4f4; padding: 12px; border-radius: 6px;
+         display: block; word-break: break-all; font-size: 14px;
+         margin: 16px 0; }
+  button { background: #ff0050; color: white; border: 0; padding: 12px 20px;
+           border-radius: 6px; font-size: 15px; cursor: pointer; }
+  .ok { color: #14a800; }
+  .err { color: #c40000; }
+</style>
+</head>
+<body>
+  <h1>OAuth callback</h1>
+  <p id="msg">Reading code from URL…</p>
+  <code id="codeBox" style="display:none"></code>
+  <button id="copyBtn" style="display:none" onclick="copyCode()">Copy code</button>
+  <p id="hint" style="display:none; margin-top:24px; color:#555;">
+    Paste this code back into the Terminal window where you ran the OAuth
+    helper script.
+  </p>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
+  const error = params.get("error") || params.get("error_description");
+  const msg = document.getElementById("msg");
+  const codeBox = document.getElementById("codeBox");
+  const copyBtn = document.getElementById("copyBtn");
+  const hint = document.getElementById("hint");
+  if (error) {
+    msg.innerHTML = '<span class="err">Authorization failed: ' + error + '</span>';
+  } else if (code) {
+    msg.innerHTML = '<span class="ok">Authorized. Copy the code below:</span>';
+    codeBox.textContent = code;
+    codeBox.style.display = "block";
+    copyBtn.style.display = "inline-block";
+    hint.style.display = "block";
+  } else {
+    msg.innerHTML = "(No code in URL — open this page from a TikTok OAuth redirect.)";
+  }
+  function copyCode() {
+    navigator.clipboard.writeText(codeBox.textContent);
+    copyBtn.textContent = "Copied!";
+    setTimeout(() => copyBtn.textContent = "Copy code", 1500);
+  }
+</script>
+</body>
+</html>

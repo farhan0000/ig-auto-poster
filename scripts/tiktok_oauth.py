@@ -1,33 +1,38 @@
-"""One-time TikTok OAuth helper.
+"""One-time TikTok OAuth helper (HTTPS-redirect / paste-code flow).
 
-Run this on your laptop ONCE to get an access_token + refresh_token.
-You then paste the access_token into your GitHub repo as the
-TIKTOK_ACCESS_TOKEN secret. The token lasts ~24 hours; the refresh_token
-lasts a year and is used to get fresh access tokens.
+TikTok requires HTTPS redirect URIs, so we can't run a local callback
+server. Instead, the redirect goes to a tiny page on your GitHub Pages
+site (docs/oauth/index.html) which displays the OAuth `code` for you to
+copy and paste back into this script.
 
-Prerequisites (do these on developers.tiktok.com first):
-  1. Create a TikTok developer account.
-  2. Create an app. Enable the "Login Kit" + "Content Posting API" products.
-  3. In the app's settings, set "Redirect URI" to:  http://localhost:8765/cb
-  4. Copy the Client Key and Client Secret.
+Prereqs (one-time setup on developers.tiktok.com):
+  1. Create app, add Login Kit + Content Posting API products.
+  2. Set Login Kit Redirect URI to: https://YOUR_GH.github.io/ig-auto-poster/oauth/
+  3. Add scopes: user.info.basic, video.upload, video.publish.
+  4. Save.
 
 Usage:
   $ pip install requests
-  $ TIKTOK_CLIENT_KEY=awxxxxxx TIKTOK_CLIENT_SECRET=xxxx python scripts/tiktok_oauth.py
-  -> Browser opens TikTok, you log in and approve.
-  -> Script prints access_token and refresh_token. Paste access_token into
-     your GitHub repo's Settings -> Secrets -> Actions as TIKTOK_ACCESS_TOKEN.
+  $ TIKTOK_CLIENT_KEY=... TIKTOK_CLIENT_SECRET=... \
+      python3 scripts/tiktok_oauth.py
+  -> Browser opens TikTok auth.
+  -> You log in, click Allow.
+  -> Browser redirects to your GH Pages OAuth callback page; that page
+     displays the `code` for you to copy.
+  -> Paste the code back into the Terminal when prompted.
+  -> Script exchanges it for access_token + refresh_token and prints them.
 
-To refresh the token later:
-  $ TIKTOK_CLIENT_KEY=... TIKTOK_CLIENT_SECRET=... python scripts/tiktok_oauth.py refresh <refresh_token>
+To refresh later:
+  $ TIKTOK_CLIENT_KEY=... TIKTOK_CLIENT_SECRET=... \
+      python3 scripts/tiktok_oauth.py refresh <refresh_token>
 """
 from __future__ import annotations
 
-import http.server
+import base64
+import hashlib
 import os
 import secrets
 import sys
-import threading
 import urllib.parse
 import webbrowser
 
@@ -35,46 +40,22 @@ import requests
 
 CLIENT_KEY = os.environ.get("TIKTOK_CLIENT_KEY", "")
 CLIENT_SECRET = os.environ.get("TIKTOK_CLIENT_SECRET", "")
-REDIRECT_URI = "http://localhost:8765/cb"
+REDIRECT_URI = os.environ.get(
+    "TIKTOK_REDIRECT_URI",
+    "https://farhan0000.github.io/ig-auto-poster/oauth/",
+)
 SCOPES = "user.info.basic,video.upload,video.publish"
 
 AUTH_URL = "https://www.tiktok.com/v2/auth/authorize/"
 TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/"
 
 
-_received_code: dict[str, str] = {}
-
-
-class _CallbackHandler(http.server.BaseHTTPRequestHandler):
-    def log_message(self, format, *args):
-        pass  # silence
-
-    def do_GET(self):
-        parsed = urllib.parse.urlparse(self.path)
-        if parsed.path != "/cb":
-            self.send_response(404)
-            self.end_headers()
-            return
-        qs = urllib.parse.parse_qs(parsed.query)
-        if "code" in qs:
-            _received_code["code"] = qs["code"][0]
-            _received_code["state"] = qs.get("state", [""])[0]
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(b"<h2>Got it. You can close this tab.</h2>")
-        else:
-            err = qs.get("error_description", qs.get("error", ["unknown"]))[0]
-            _received_code["error"] = err
-            self.send_response(400)
-            self.end_headers()
-            self.wfile.write(f"<h2>Error: {err}</h2>".encode())
-
-
-def _start_local_server() -> http.server.HTTPServer:
-    server = http.server.HTTPServer(("localhost", 8765), _CallbackHandler)
-    t = threading.Thread(target=server.serve_forever, daemon=True)
-    t.start()
-    return server
+def _pkce_pair() -> tuple[str, str]:
+    """Generate a (code_verifier, code_challenge) pair for PKCE."""
+    verifier = base64.urlsafe_b64encode(secrets.token_bytes(48)).decode().rstrip("=")
+    digest = hashlib.sha256(verifier.encode()).digest()
+    challenge = base64.urlsafe_b64encode(digest).decode().rstrip("=")
+    return verifier, challenge
 
 
 def authorize() -> dict:
@@ -82,31 +63,45 @@ def authorize() -> dict:
         sys.exit("Set TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET env vars.")
 
     state = secrets.token_urlsafe(16)
+    code_verifier, code_challenge = _pkce_pair()
     params = {
         "client_key": CLIENT_KEY,
         "scope": SCOPES,
         "response_type": "code",
         "redirect_uri": REDIRECT_URI,
         "state": state,
+        "code_challenge": code_challenge,
+        "code_challenge_method": "S256",
     }
     url = f"{AUTH_URL}?{urllib.parse.urlencode(params)}"
-    server = _start_local_server()
-    print("Opening browser for TikTok authorization...")
-    print("If it doesn't open, paste this URL manually:")
+
+    print()
+    print("=" * 64)
+    print("TikTok OAuth — Step 1: Authorize the app")
+    print("=" * 64)
+    print()
+    print("Opening your browser to TikTok...")
+    print("If it does not open, paste this URL into Chrome manually:")
+    print()
     print(url)
+    print()
     webbrowser.open(url)
 
-    while not _received_code:
-        pass
+    print("=" * 64)
+    print("After you click Allow on TikTok, your browser will redirect to:")
+    print(f"   {REDIRECT_URI}?code=XXXX&...")
+    print()
+    print("That page will display a `code` value with a 'Copy code' button.")
+    print("Copy the code, then paste it below and press Enter.")
+    print("=" * 64)
+    print()
 
-    if "error" in _received_code:
-        sys.exit(f"Authorization failed: {_received_code['error']}")
-    if _received_code.get("state") != state:
-        sys.exit("State mismatch — possible CSRF, aborting.")
+    code = input("Paste the code here: ").strip()
+    if not code:
+        sys.exit("No code entered, aborting.")
 
-    code = _received_code["code"]
-    print("Got authorization code, exchanging for tokens...")
-
+    print()
+    print("Exchanging code for tokens...")
     r = requests.post(
         TOKEN_URL,
         headers={"Content-Type": "application/x-www-form-urlencoded"},
@@ -116,13 +111,13 @@ def authorize() -> dict:
             "code": code,
             "grant_type": "authorization_code",
             "redirect_uri": REDIRECT_URI,
+            "code_verifier": code_verifier,
         },
         timeout=30,
     )
-    r.raise_for_status()
-    data = r.json()
-    server.shutdown()
-    return data
+    if r.status_code >= 400:
+        sys.exit(f"Token exchange failed [{r.status_code}]: {r.text}")
+    return r.json()
 
 
 def refresh(refresh_token: str) -> dict:
@@ -144,18 +139,26 @@ def refresh(refresh_token: str) -> dict:
 
 
 def _print_tokens(data: dict) -> None:
-    print("\n=== SUCCESS ===")
+    print()
+    print("=" * 64)
+    print("SUCCESS")
+    print("=" * 64)
     print(f"access_token  : {data.get('access_token')}")
     print(f"refresh_token : {data.get('refresh_token')}")
     print(f"expires_in    : {data.get('expires_in')} seconds")
     print(f"open_id       : {data.get('open_id')}")
+    print(f"scope         : {data.get('scope')}")
     print()
     print("Next steps:")
-    print(" 1. Copy the access_token above.")
-    print(" 2. In your GitHub repo: Settings -> Secrets -> Actions ->")
-    print("    New repository secret named TIKTOK_ACCESS_TOKEN, paste it.")
-    print(" 3. SAVE the refresh_token somewhere private — you'll use it")
-    print("    to refresh the access_token before it expires (every 24h).")
+    print(" 1. Copy the four secrets:")
+    print("       TIKTOK_CLIENT_KEY      (the env var you set)")
+    print("       TIKTOK_CLIENT_SECRET   (the env var you set)")
+    print("       TIKTOK_ACCESS_TOKEN    (above)")
+    print("       TIKTOK_REFRESH_TOKEN   (above)")
+    print(" 2. In your GitHub repo: Settings → Secrets and variables → Actions")
+    print("    → New repository secret. Paste each value into a separate secret.")
+    print(" 3. Trigger the workflow manually to test.")
+    print()
 
 
 if __name__ == "__main__":
