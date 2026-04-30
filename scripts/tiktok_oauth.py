@@ -44,7 +44,7 @@ REDIRECT_URI = os.environ.get(
     "TIKTOK_REDIRECT_URI",
     "https://farhan0000.github.io/ig-auto-poster/oauth/",
 )
-SCOPES = "user.info.basic,video.upload,video.publish"
+SCOPES = os.environ.get("TIKTOK_SCOPES", "user.info.basic,video.upload,video.publish")
 
 AUTH_URL = "https://www.tiktok.com/v2/auth/authorize/"
 TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/"
