@@ -1,7 +1,8 @@
-"""Stage 2 of the CI pipeline: publish the pending post to Instagram.
+"""Stage 2: upload today's video to TikTok (drafts inbox).
 
-Reads pending_post.json (written by stage 1 and committed by the workflow),
-posts via Graph API, then appends the result to posted_log.json.
+Reads pending_post.json (written by stage 1 + committed by the GH Action),
+uploads the mp4 to TikTok via the Content Posting API, then logs the
+result to posted_log.json.
 """
 from __future__ import annotations
 
@@ -13,8 +14,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from src.image import public_url_for
-from src.instagram import publish
+from src.tiktok import publish
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 LOG_PATH = REPO_ROOT / "posted_log.json"
@@ -47,23 +47,21 @@ def publish_stage(pending: dict | None = None) -> dict:
         pending = json.loads(PENDING_PATH.read_text())
 
     dry_run = os.environ.get("DRY_RUN", "false").lower() == "true"
-
     entry = dict(pending)
 
     if dry_run:
-        log.info("DRY_RUN=true, skipping IG publish")
+        log.info("DRY_RUN=true, skipping TikTok publish")
         entry["published"] = False
         entry["dry_run"] = True
     else:
-        image_path = REPO_ROOT / pending["image_path"]
-        image_url = public_url_for(image_path)
-        log.info("Public image URL: %s", image_url)
+        video_path = REPO_ROOT / pending["video_path"]
+        if not video_path.exists():
+            raise FileNotFoundError(f"video missing: {video_path}")
         try:
-            published = publish(
-                image_url=image_url, caption=pending["full_caption"]
-            )
+            result = publish(video_path, caption=pending.get("full_caption"))
             entry["published"] = True
-            entry["ig_media_id"] = published.get("id")
+            entry["tiktok_publish_id"] = result.get("publish_id")
+            entry["tiktok_status"] = result.get("status")
         except Exception as e:  # noqa: BLE001
             log.exception("Publish failed")
             entry["published"] = False
@@ -76,15 +74,15 @@ def publish_stage(pending: dict | None = None) -> dict:
     entries = _read_log()
     entries.append(entry)
     _write_log(entries)
-    # Clear the pending file so we don't accidentally re-publish.
     if PENDING_PATH.exists():
         try:
             PENDING_PATH.unlink()
         except OSError as e:
             log.warning("Could not delete %s: %s", PENDING_PATH, e)
     log.info(
-        "Done. niche=%s published=%s",
-        entry["niche"],
+        "Done. niche=%s bucket=%s published=%s",
+        entry.get("niche"),
+        entry.get("bucket"),
         entry.get("published"),
     )
     return entry

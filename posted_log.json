@@ -1,35 +1,31 @@
 [
   {
-    "timestamp": "2026-04-29T22:48:09.711017+00:00",
-    "niche": "Insurance",
-    "angle": "What umbrella insurance actually covers in 2026",
-    "hook": "Your $300K liability cap won't survive one bad lawsuit.",
-    "image_path": "images/2026-04-29_224809.jpg",
+    "timestamp": "2026-04-30T19:12:10.063863+00:00",
+    "niche": "Tech & Gadgets",
+    "bucket": "setup_and_workflow",
+    "angle": "Magnetic charging cables that survive backpack abuse",
+    "hook": "Stop replacing frayed charging cables every 3 months.",
+    "image_path": "posts/2026-04-30/image.jpg",
+    "voiceover_path": "posts/2026-04-30/voiceover.mp3",
+    "video_path": "posts/2026-04-30/video.mp4",
     "hashtags": [
-      "personalfinance",
-      "umbrellainsurance",
-      "moneytips",
-      "insurance101",
-      "financialliteracy",
-      "moneymindset",
-      "wealthbuilding",
-      "financegoals",
-      "personalfinancetips",
-      "smartmoney",
-      "moneymanagement",
-      "savemoney",
-      "moneymatters",
-      "financialplanning",
-      "financialfreedom",
-      "moneyhacks",
-      "investing101",
-      "financialeducation",
-      "insurancetips",
-      "liabilityinsurance"
+      "techtok",
+      "gadgets",
+      "techhacks",
+      "chargingcable",
+      "gadgetreview"
     ],
-    "caption_body": "Your $300K liability cap won't survive one bad lawsuit.\n\nUmbrella policies stack on top of your auto and home liability and kick in once those run out. $1M of coverage typically costs $150\u2013$300/year \u2014 cheaper than most streaming bundles.\n\nThree things people get wrong:\n1. They think their auto policy is enough.\n2. They confuse 'underlying limits' with deductibles.\n3. They skip it because they 'don't have assets' \u2014 future wages are an asset.\n\nThis is general info, not advice. Talk to a licensed agent before buying.\n\nSave this if you're comparing quotes this month.",
-    "full_caption": "Your $300K liability cap won't survive one bad lawsuit.\n\nUmbrella policies stack on top of your auto and home liability and kick in once those run out. $1M of coverage typically costs $150\u2013$300/year \u2014 cheaper than most streaming bundles.\n\nThree things people get wrong:\n1. They think their auto policy is enough.\n2. They confuse 'underlying limits' with deductibles.\n3. They skip it because they 'don't have assets' \u2014 future wages are an asset.\n\nThis is general info, not advice. Talk to a licensed agent before buying.\n\nSave this if you're comparing quotes this month.\n\n.\n.\n.\n#personalfinance #umbrellainsurance #moneytips #insurance101 #financialliteracy #moneymindset #wealthbuilding #financegoals #personalfinancetips #smartmoney #moneymanagement #savemoney #moneymatters #financialplanning #financialfreedom #moneyhacks #investing101 #financialeducation #insurancetips #liabilityinsurance",
+    "script": "Stop replacing frayed charging cables every 3 months. Magnetic tip cables fix this with one trick: the cable disconnects when something yanks it, so the strain never reaches the wire. You leave the tiny tip in your phone, and the cable snaps onto it. Fifteen bucks for a three-pack on Amazon. They charge as fast as the original. Save this if your last cable died in your backpack.",
+    "overlays": [
+      "Magnetic tip stays in",
+      "Yank-proof",
+      "$15 for 3-pack",
+      "Saves you cables"
+    ],
+    "caption_body": "Why is no one talking about magnetic charging cables \ud83d\udd0c",
+    "full_caption": "Why is no one talking about magnetic charging cables \ud83d\udd0c #techtok #gadgets #techhacks #chargingcable #gadgetreview",
     "published": true,
-    "ig_media_id": "17999999999999999"
+    "tiktok_publish_id": "v_pub_123",
+    "tiktok_status": "SEND_TO_USER_INBOX"
   }
 ]

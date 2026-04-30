@@ -1,8 +1,8 @@
 """Image generation via OpenAI Images API.
 
-Saves to images/<date>.jpg so the GitHub Action can commit it back to the
-repo and we can serve it at https://raw.githubusercontent.com/.../images/...
-which Meta's Graph API requires (it pulls the image by URL).
+Generates a 9:16 vertical image (1024x1536, the closest to TikTok's
+1080x1920 native that gpt-image-1 supports) and saves it as a JPEG.
+The video composer scales/crops it to 1080x1920 during ffmpeg compose.
 """
 from __future__ import annotations
 
@@ -19,17 +19,23 @@ log = logging.getLogger(__name__)
 REPO_ROOT = Path(__file__).resolve().parent.parent
 IMAGES_DIR = REPO_ROOT / "images"
 
+# gpt-image-1 supported portrait size closest to 9:16 is 1024x1536.
+# We later scale to 1080x1920 in the video composer, which keeps the
+# 9:16 aspect ratio without cropping.
+DEFAULT_SIZE = "1024x1536"
 
-def generate_image(prompt: str, model: str | None = None) -> Path:
-    """Generate a 1024x1024 image, save as JPEG, return its path."""
+
+def generate_image(prompt: str, model: str | None = None, size: str | None = None) -> Path:
+    """Generate a 9:16 portrait image, save as JPEG, return its path."""
     model = model or os.environ.get("OPENAI_IMAGE_MODEL", "gpt-image-1")
+    size = size or os.environ.get("OPENAI_IMAGE_SIZE", DEFAULT_SIZE)
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
     # gpt-image-1 always returns base64 in `b64_json`.
     resp = client.images.generate(
         model=model,
         prompt=prompt,
-        size="1024x1024",
+        size=size,
         n=1,
     )
     item = resp.data[0]

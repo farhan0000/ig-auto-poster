@@ -1,10 +1,14 @@
-# High-RPM English-language niches.
-# RPM = revenue-per-mille (advertising revenue per 1,000 impressions).
-# These categories consistently rank highest on YouTube/IG ad-rate
-# benchmarks for US/UK/CA/AU audiences (2024-2026 reports from
-# Tubefilter, Mediakix, ChannelMeter, Influencer Marketing Hub).
+# Single niche: Tech & Gadgets, optimized for TikTok For You algorithm
+# and matched to the_gadget_city_ brand.
 #
-# Weights bias rotation toward the top earners. Adjust freely.
+# We don't rotate across niches anymore — focus wins on TikTok.
+# Instead we rotate across angle "buckets" within the niche so videos
+# stay varied: some unboxings, some "this gadget actually saves you money",
+# some hidden iOS/Android features, some comparisons, etc.
+#
+# Country target = US (highest tech ad spend, best Amazon Associates payouts).
+# TikTok For You will push to other English markets organically when content
+# engages. Caption + hook tone is tuned for US viewers.
 
 audience_countries:
   - US
@@ -12,75 +16,68 @@ audience_countries:
   - CA
   - AU
 language: English
+brand:
+  handle_tiktok: "@thegadgetcity_01"
+  handle_instagram: "@the_gadget_city_"
+  voice: "Punchy, no-fluff tech reviewer. Speaks like a friend who tested it. Confident but not bro-y."
 
-niches:
-  - name: Personal Finance & Investing
-    weight: 5
-    angle_examples:
-      - "passive income ideas for 2026"
-      - "high-yield savings vs index funds"
-      - "Roth IRA mistakes to avoid"
-      - "how to read an earnings report"
+niche: Tech & Gadgets
 
-  - name: Insurance
+angle_buckets:
+  - bucket: hidden_features
     weight: 4
-    angle_examples:
-      - "term vs whole life insurance"
-      - "lowering car insurance premiums"
-      - "what umbrella insurance actually covers"
+    description: "Underused features built into devices people already own."
+    examples:
+      - "iPhone hidden setting that doubles your battery life on long days"
+      - "Android shortcut to record calls without an app"
+      - "AirPods feature that translates conversations live"
+      - "Apple Watch trick that finds your phone even on silent"
 
-  - name: Real Estate & Mortgages
+  - bucket: gadgets_that_save_money
     weight: 4
-    angle_examples:
-      - "first-time homebuyer tips"
-      - "ARM vs fixed-rate mortgage"
-      - "house hacking explained"
+    description: "Cheap gadgets that replace something expensive."
+    examples:
+      - "$15 device that replaces a $300 home security system"
+      - "USB-C tester that pays for itself the first time you spot a bad cable"
+      - "Wi-fi extender vs mesh — when each actually wins"
+      - "Off-brand SSDs that benchmark within 5% of Samsung at half the price"
 
-  - name: Legal Advice (general, non-jurisdictional)
+  - bucket: under_the_radar_gadgets
     weight: 3
-    angle_examples:
-      - "rights during a traffic stop"
-      - "what 'at-will employment' really means"
-      - "when you actually need an estate plan"
+    description: "Lesser-known products that feel like cheat codes."
+    examples:
+      - "The $30 headphones engineers actually use at their desks"
+      - "Magnetic charging cables that survive backpack abuse"
+      - "Mini portable monitor that turns any laptop into a dual-screen setup"
 
-  - name: Business & Entrepreneurship
-    weight: 4
-    angle_examples:
-      - "side hustle ideas with low startup cost"
-      - "LLC vs S-corp basics"
-      - "negotiating a raise with data"
-
-  - name: Tech, SaaS & Productivity
-    weight: 4
-    angle_examples:
-      - "AI tools that actually save time"
-      - "self-hosting vs SaaS trade-offs"
-      - "password manager comparison"
-
-  - name: Digital Marketing & SEO
-    weight: 3
-    angle_examples:
-      - "what changed in Google Search this year"
-      - "writing copy that converts"
-      - "email vs SMS open rates"
-
-  - name: Cryptocurrency & Web3 (educational)
+  - bucket: don_t_buy_this
     weight: 2
-    angle_examples:
-      - "self-custody wallets explained"
-      - "stablecoin risks"
-      - "what an ETF approval actually changes"
+    description: "Popular products that aren't worth it. Saves viewers money, builds trust."
+    examples:
+      - "Three smart-home gadgets that feel cool but you'll unplug in 2 weeks"
+      - "Why 'gaming' branded keyboards are usually overpriced regular keyboards"
+      - "When NOT to buy a smartwatch"
 
-  - name: Health, Longevity & Medical (educational, non-prescriptive)
+  - bucket: setup_and_workflow
     weight: 3
-    angle_examples:
-      - "what HSA accounts can pay for"
-      - "preventive care covered at $0"
-      - "reading a blood panel"
+    description: "How to set up gadgets you already own to actually be useful."
+    examples:
+      - "Three iPhone settings to change the day you buy it"
+      - "Best free apps to turn an old phone into a security camera"
+      - "How to extend your laptop battery from 4 hours to 7 with one settings change"
 
-  - name: Online Education & Career
-    weight: 3
-    angle_examples:
-      - "certifications that actually pay off"
-      - "negotiating a remote-work offer"
-      - "resume mistakes recruiters flag"
+  - bucket: comparison
+    weight: 2
+    description: "Head-to-head comparisons. Builds authority, gets engagement."
+    examples:
+      - "$50 vs $300 webcam: can you actually tell?"
+      - "Wired earbuds vs wireless for calls — surprising winner"
+      - "iPad vs cheap Android tablet for couch use"
+
+  - bucket: ai_and_software
+    weight: 2
+    description: "AI tools and software that meaningfully change how you use your phone/computer."
+    examples:
+      - "Free AI tool that summarizes any YouTube video in 10 seconds"
+      - "ChatGPT settings most people miss"
+      - "On-device transcription apps that don't send your audio anywhere"

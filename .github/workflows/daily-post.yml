@@ -1,38 +1,31 @@
-name: Daily Instagram Post
+name: Daily TikTok Post
 
-# Generates a fresh post every day. Two modes:
+# Generates a TikTok-ready video every day. Two modes:
 #
-#  * Generate-only mode (DEFAULT, no IG creds): produces image + caption
-#    + hashtags, drops them in posts/<YYYY-MM-DD>/, commits to repo. You
-#    open the folder on github.com (works on phone), copy the caption,
-#    save the image, post manually in the IG app. ~60 seconds of work.
+#  * Generate-only mode (DEFAULT, no TikTok creds): produces video.mp4
+#    + caption + hashtags in posts/<YYYY-MM-DD>/, commits to repo. You
+#    open the folder on github.com (works on phone), download the video,
+#    upload it to TikTok yourself.
 #
-#  * Auto-publish mode (when IG_USER_ID + IG_ACCESS_TOKEN secrets exist):
-#    same generation, then automatically posts to Instagram via the IG
-#    Graph API. The publish step is skipped if those secrets are empty.
+#  * Auto-publish mode (when TIKTOK_ACCESS_TOKEN secret exists): same
+#    generation, then uploads the video to your TikTok DRAFTS via the
+#    official Content Posting API. You open the TikTok app, find the
+#    draft in your inbox, tap Post. (Direct publish without manual tap
+#    requires a TikTok app review for the developer app.)
 #
-# In generate-only mode, posting time-of-day matters less since YOU pick
-# when to post. We still run on a varied schedule so the content is ready
-# for you in the morning regardless of where you are.
+# Cron runs at 05:00 UTC daily — that's 10am Pakistan / 1am ET / 6am UK.
 on:
   schedule:
-    # Every day at 05:00 UTC. That's 10am Pakistan / 1am ET / 6am UK / 3pm
-    # Sydney — which means by the time most users open IG, today's post is
-    # already waiting in the repo. Adjust to taste.
     - cron: "0 5 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Generate but do NOT publish to Instagram"
+        description: "Generate the video but do NOT upload to TikTok"
         type: boolean
         default: false
-      skip_jitter:
-        description: "Skip the 0-25min random delay (for manual runs)"
-        type: boolean
-        default: true
 
 permissions:
-  contents: write   # needed to commit the generated image + log back
+  contents: write   # needed to commit the generated video + log back
 
 jobs:
   post:
@@ -47,16 +40,12 @@ jobs:
           fetch-depth: 1
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Random jitter (0-25 min)
-        # Only on scheduled runs, not on manual workflow_dispatch.
-        # Posting at 14:00:00 every day is a tell that you're automated.
-        # We sleep a random 0-1500s here so the actual post time drifts
-        # within a ~25min window around the cron tick.
-        if: ${{ github.event_name == 'schedule' && inputs.skip_jitter != true }}
+      - name: Install ffmpeg
+        # Preinstalled on ubuntu-latest as of 2024+. Re-install just in case.
         run: |
-          DELAY=$((RANDOM % 1500))
-          echo "Sleeping ${DELAY}s before posting..."
-          sleep $DELAY
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fonts-dejavu-core
+          ffmpeg -version | head -1
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -64,41 +53,27 @@ jobs:
           python-version: "3.11"
           cache: pip
 
-      - name: Install dependencies
+      - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Compute GH_RAW_BASE
-        id: rawbase
-        run: |
-          echo "url=https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
-
-      - name: Generate image (commit before publishing)
-        # We split into two python invocations: first generate the image and
-        # commit it so it has a stable public URL; THEN publish to IG which
-        # fetches the URL.
+      - name: Generate daily video bundle
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          IG_USER_ID: ${{ secrets.IG_USER_ID }}
-          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
-          GH_RAW_BASE: ${{ steps.rawbase.outputs.url }}
-          DRY_RUN: ${{ inputs.dry_run || 'false' }}
-          STAGE: generate
         run: |
           python -m src.pipeline_generate
 
-      - name: Check for IG credentials
-        id: ig
+      - name: Check for TikTok credentials
+        id: tt
         env:
-          IG_USER_ID: ${{ secrets.IG_USER_ID }}
-          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          TIKTOK_ACCESS_TOKEN: ${{ secrets.TIKTOK_ACCESS_TOKEN }}
         run: |
-          if [ -n "$IG_USER_ID" ] && [ -n "$IG_ACCESS_TOKEN" ]; then
+          if [ -n "$TIKTOK_ACCESS_TOKEN" ]; then
             echo "Auto-publish enabled."
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Generate-only mode (no IG credentials configured)."
+            echo "Generate-only mode (no TIKTOK_ACCESS_TOKEN secret)."
             echo "enabled=false" >> "$GITHUB_OUTPUT"
           fi
 
@@ -106,7 +81,7 @@ jobs:
         run: |
           git config user.name "ig-auto-poster[bot]"
           git config user.email "ig-auto-poster@users.noreply.github.com"
-          git add images/ posts/ pending_post.json posted_log.json 2>/dev/null || true
+          git add posts/ pending_post.json posted_log.json 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "Nothing to commit."
           else
@@ -114,21 +89,16 @@ jobs:
             git push
           fi
 
-      - name: Publish to Instagram
-        if: ${{ inputs.dry_run != true && steps.ig.outputs.enabled == 'true' }}
+      - name: Publish to TikTok (drafts inbox)
+        if: ${{ inputs.dry_run != true && steps.tt.outputs.enabled == 'true' }}
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          IG_USER_ID: ${{ secrets.IG_USER_ID }}
-          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
-          GH_RAW_BASE: ${{ steps.rawbase.outputs.url }}
+          TIKTOK_ACCESS_TOKEN: ${{ secrets.TIKTOK_ACCESS_TOKEN }}
+          TIKTOK_DIRECT_PUBLISH: ${{ secrets.TIKTOK_DIRECT_PUBLISH }}
         run: |
-          # raw.githubusercontent.com can take a few seconds to surface a
-          # newly-pushed file; give it a moment.
-          sleep 15
           python -m src.pipeline_publish
 
       - name: Commit final log
-        if: ${{ always() && inputs.dry_run != true && steps.ig.outputs.enabled == 'true' }}
+        if: ${{ always() && inputs.dry_run != true && steps.tt.outputs.enabled == 'true' }}
         run: |
           git config user.name "ig-auto-poster[bot]"
           git config user.email "ig-auto-poster@users.noreply.github.com"
