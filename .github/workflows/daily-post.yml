@@ -40,12 +40,15 @@ jobs:
           fetch-depth: 1
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install ffmpeg
-        # Preinstalled on ubuntu-latest as of 2024+. Re-install just in case.
+      - name: Install ffmpeg + chunky fonts
+        # Roboto Bold gives the punchy "TikTok caption" look we want;
+        # DejaVu/Noto are fallbacks. ffmpeg is preinstalled but we re-install
+        # to keep CI deterministic.
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg fonts-dejavu-core
+          sudo apt-get install -y -qq ffmpeg fonts-roboto fonts-noto-core fonts-dejavu-core
           ffmpeg -version | head -1
+          ls /usr/share/fonts/truetype/roboto/ 2>/dev/null | head -5 || true
 
       - name: Set up Python
         uses: actions/setup-python@v5

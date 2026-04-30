@@ -76,6 +76,7 @@ def generate_stage() -> dict:
         voiceover_path=voiceover_path,
         hook=plan.hook,
         overlays=plan.overlays,
+        script=plan.script,
         out_path=video_path,
     )
 

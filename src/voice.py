@@ -20,8 +20,8 @@ from openai import OpenAI
 
 log = logging.getLogger(__name__)
 
-DEFAULT_VOICE = "onyx"
-DEFAULT_MODEL = "tts-1"     # tts-1-hd is also available, ~2x cost, slightly better
+DEFAULT_VOICE = "nova"      # friendly, energetic female — best for tech content
+DEFAULT_MODEL = "tts-1-hd"  # higher-quality prosody than tts-1, ~2x cost
 DEFAULT_FORMAT = "mp3"
 
 
