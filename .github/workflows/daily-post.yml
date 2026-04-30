@@ -71,12 +71,19 @@ jobs:
         id: tt
         env:
           TIKTOK_ACCESS_TOKEN: ${{ secrets.TIKTOK_ACCESS_TOKEN }}
+          TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
+          TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
+          TIKTOK_REFRESH_TOKEN: ${{ secrets.TIKTOK_REFRESH_TOKEN }}
         run: |
-          if [ -n "$TIKTOK_ACCESS_TOKEN" ]; then
-            echo "Auto-publish enabled."
+          REFRESHABLE=$([ -n "$TIKTOK_CLIENT_KEY" ] && [ -n "$TIKTOK_CLIENT_SECRET" ] && [ -n "$TIKTOK_REFRESH_TOKEN" ] && echo "y" || echo "n")
+          if [ "$REFRESHABLE" = "y" ]; then
+            echo "Auto-publish enabled (auto-refresh mode)."
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          elif [ -n "$TIKTOK_ACCESS_TOKEN" ]; then
+            echo "Auto-publish enabled (static token; expires in 24h)."
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Generate-only mode (no TIKTOK_ACCESS_TOKEN secret)."
+            echo "Generate-only mode (no TikTok credentials configured)."
             echo "enabled=false" >> "$GITHUB_OUTPUT"
           fi
 
@@ -96,6 +103,9 @@ jobs:
         if: ${{ inputs.dry_run != true && steps.tt.outputs.enabled == 'true' }}
         env:
           TIKTOK_ACCESS_TOKEN: ${{ secrets.TIKTOK_ACCESS_TOKEN }}
+          TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
+          TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
+          TIKTOK_REFRESH_TOKEN: ${{ secrets.TIKTOK_REFRESH_TOKEN }}
           TIKTOK_DIRECT_PUBLISH: ${{ secrets.TIKTOK_DIRECT_PUBLISH }}
         run: |
           python -m src.pipeline_publish
